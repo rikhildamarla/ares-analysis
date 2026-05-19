@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>ARES — Pose Viewer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a1a2e; overflow: hidden; font-family: monospace; }
+  canvas { display: block; }
+
+  #ui {
+    position: fixed; top: 16px; left: 16px;
+    color: #00ffe7; font-size: 12px; line-height: 1.8;
+    pointer-events: none;
+  }
+  #status {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    color: #fff; font-size: 13px; background: rgba(0,0,0,0.5);
+    padding: 6px 14px; border-radius: 20px;
+    pointer-events: none;
+  }
+
+  #bone-tester {
+    position: fixed; top: 16px; right: 16px;
+    background: rgba(10,12,20,0.92);
+    border: 1px solid #00ffe7;
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: #00ffe7;
+    font-size: 12px;
+    z-index: 10;
+    width: 220px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+  }
+  #bone-tester .section-title { letter-spacing: 0.05em; margin-bottom: 8px; }
+  #bone-tester .axis-label { margin-bottom: 4px; color: #aaa; }
+  #bone-tester input[type=range] { width: 100%; accent-color: #00ffe7; }
+  #angle-display { margin-top: 6px; color: #666; font-size: 11px; }
+
+  .check-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; cursor: pointer; color: #ccc; }
+  .check-row input { accent-color:#00ffe7; width:14px; height:14px; cursor:pointer; }
+
+  #bone-tree-wrap { margin-top: 8px; border-top: 1px solid #223344; padding-top: 8px; }
+  #bone-tree-wrap .tree-title { color: #aaa; font-size: 11px; margin-bottom: 6px; letter-spacing: 0.04em; }
+  #bone-tree { max-height: 260px; overflow-y: auto; font-size: 11px; }
+  .bone-item { display: flex; align-items: center; gap: 6px; padding: 3px 4px; border-radius: 4px; cursor: pointer; color: #ccc; white-space: nowrap; transition: background 0.1s; }
+  .bone-item:hover { background: rgba(255,255,255,0.06); }
+  .bone-item.highlighted { color: #ff2d9b; }
+  .bone-item input[type=checkbox] { accent-color: #ff2d9b; width: 12px; height: 12px; cursor: pointer; flex-shrink: 0; }
+  .bone-indent { display: inline-block; width: 12px; flex-shrink: 0; }
+
+  #ref-panel { position: fixed; bottom: 16px; right: 16px; width: 220px; background: rgba(10,12,20,0.88); border: 1px solid #00ffe7; border-radius: 8px; overflow: hidden; user-select: none; box-shadow: 0 4px 24px rgba(0,0,0,0.6); z-index: 10; }
+  #ref-header { display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; border-bottom: 1px solid #223344; cursor: grab; background: rgba(0,255,231,0.07); }
+  #ref-header:active { cursor: grabbing; }
+  #ref-label { color: #00ffe7; font-size: 11px; letter-spacing: 0.05em; }
+  #ref-nav { display: flex; gap: 4px; align-items: center; }
+  .nav-btn { background: rgba(0,255,231,0.12); border: 1px solid #00ffe740; color: #00ffe7; font-size: 15px; line-height: 1; width: 22px; height: 22px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+  .nav-btn:hover { background: rgba(0,255,231,0.28); }
+  #ref-counter { color: #aaa; font-size: 10px; min-width: 28px; text-align: center; }
+  #ref-img { display: block; width: 100%; height: auto; max-height: 360px; object-fit: contain; background: #0d1117; }
+
+  #axis-gizmo { position: fixed; top: 16px; right: 254px; width: 90px; height: 90px; z-index: 10; pointer-events: none; }
+
+  .tester-btn { flex: 1; background: rgba(0,255,231,0.12); border: 1px solid #00ffe740; color: #00ffe7; font-family: monospace; font-size: 11px; padding: 5px 8px; border-radius: 4px; cursor: pointer; transition: background 0.15s; }
+  .tester-btn:hover { background: rgba(0,255,231,0.28); }
+  .tester-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  #drop-overlay { position: fixed; inset: 0; background: rgba(0,255,231,0.12); border: 4px dashed #00ffe7; display: none; align-items: center; justify-content: center; color: #00ffe7; font-size: 24px; letter-spacing: 0.08em; z-index: 1000; pointer-events: none; }
+  #drop-overlay.active { display: flex; }
+
+  #json-drop { position: fixed; top: 114px; right: 254px; width: 90px; background: rgba(10,12,20,0.75); border: 1px dashed #00ffe740; border-radius: 6px; padding: 8px 4px; z-index: 10; text-align: center; font-size: 9px; color: #00ffe780; cursor: pointer; transition: border-color 0.15s, background 0.15s; line-height: 1.4; user-select: none; }
+  #json-drop.drag-over { border-color: #00ffe7; background: rgba(0,255,231,0.12); color: #00ffe7; }
+  #json-drop.loaded { border-color: #44ff44; color: #44ff44; }
+  #json-drop-icon { font-size: 16px; display: block; margin-bottom: 3px; }
+
+  #bone-labels { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 5; }
+  .bone-label { position: absolute; font-size: 10px; font-family: monospace; color: #ff2d9b; background: rgba(0,0,0,0.55); padding: 1px 4px; border-radius: 3px; transform: translate(-50%, -50%); white-space: nowrap; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<div id="drop-overlay">DROP pose.json HERE</div>
+<div id="ui">ARES Analysis<br><span style="color:#888">Orbit: left drag | Zoom: scroll | Pan: right drag</span></div>
+<div id="status">Loading…</div>
+<div id="bone-labels"></div>
+<div id="axis-gizmo"></div>
+
+<div id="json-drop"><span id="json-drop-icon">⬇</span>drop<br>pose.json</div>
+
+<div id="bone-tester">
+  <div class="section-title">BONE TESTER — <span id="selected-bone-name" style="color:#ff2d9b;">none</span></div>
+  <div class="axis-label"><span style="color:#ff4444;">X</span> axis</div>
+  <input id="slider-x" type="range" min="0" max="360" value="0" step="1">
+  <div class="axis-label" style="margin-top:8px;"><span style="color:#44ff44;">Y</span> axis</div>
+  <input id="slider-y" type="range" min="0" max="360" value="0" step="1">
+  <div class="axis-label" style="margin-top:8px;"><span style="color:#4488ff;">Z</span> axis</div>
+  <input id="slider-z" type="range" min="0" max="360" value="0" step="1">
+  <div id="angle-display">X: 0°  Y: 0°  Z: 0°</div>
+  <div style="display:flex; gap:6px; margin-top:10px;">
+    <button id="btn-undo" class="tester-btn">Undo (⌘Z)</button>
+    <button id="btn-reset" class="tester-btn">Reset Pose</button>
+  </div>
+  <div style="display:flex; gap:6px; margin-top:6px;">
+    <button id="btn-export" class="tester-btn" style="flex:1;">Export pose.json</button>
+  </div>
+  <label class="check-row"><input type="checkbox" id="toggle-armature" checked> Show armature</label>
+  <div id="bone-tree-wrap">
+    <div class="tree-title">SKELETON — click to highlight</div>
+    <div id="bone-tree"></div>
+  </div>
+</div>
+
+<div id="ref-panel">
+  <div id="ref-header">
+    <span id="ref-label">REFERENCE</span>
+    <div id="ref-nav">
+      <button class="nav-btn" id="btn-prev">&#8249;</button>
+      <span id="ref-counter">– / –</span>
+      <button class="nav-btn" id="btn-next">&#8250;</button>
+    </div>
+  </div>
+  <img id="ref-img" src="test-image.png" alt="reference pose"/>
+</div>
+
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader }    from 'three/addons/loaders/GLTFLoader.js';
+
+/* ───────────────────────────────────────────────────────────────────────────
+   CORE DATA MODEL — everything is Euler degrees, no quaternions in storage.
+
+   _boneDegrees[boneName] = [xDeg, yDeg, zDeg]   (0-360, default [0,0,0])
+
+   To apply:
+     deltaQuat = Quaternion.fromEuler(x°, y°, z°)
+     bone.quaternion = bindPose * deltaQuat
+
+   Sliders read/write _boneDegrees directly — no conversion, no round-trip.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+let _bindPose    = {};   // boneName → THREE.Quaternion (captured once from GLB)
+let _boneDegrees = {};   // boneName → [x, y, z] degrees (the single source of truth)
+let _skeleton    = null;
+
+const DEG2RAD = Math.PI / 180;
+
+function captureBindPose(skeleton) {
+  _bindPose = {};
+  skeleton.bones.forEach(b => { _bindPose[b.name] = b.quaternion.clone(); });
+  console.log('[ARES] Bind pose captured:', Object.keys(_bindPose).length, 'bones');
+}
+
+// Apply the euler degrees for one bone to its actual quaternion
+function applyBoneDegrees(bone) {
+  const [xd, yd, zd] = _boneDegrees[bone.name] || [0, 0, 0];
+  const delta = new THREE.Quaternion().setFromEuler(
+    new THREE.Euler(xd * DEG2RAD, yd * DEG2RAD, zd * DEG2RAD, 'XYZ')
+  );
+  const bind = _bindPose[bone.name];
+  if (bind) {
+    bone.quaternion.copy(bind).multiply(delta);
+  } else {
+    bone.quaternion.copy(delta);
+  }
+}
+
+// Apply full pose from a poseData object
+// Normalize a bone name: Blender uses dots (thigh.R) but GLB export strips them (thighR)
+function normalizeBoneName(name) {
+  return name.replace(/\./g, '');
+}
+
+function applyPose(skeleton, poseData) {
+  const rawEuler = poseData.euler_degrees || {};
+
+  // Build a lookup that works with both naming conventions:
+  // Try the exact GLB bone name first, then try adding dots back in common patterns
+  // Also normalize all JSON keys by removing dots so they match GLB names
+  const eulerDeg = {};
+  for (const [key, val] of Object.entries(rawEuler)) {
+    eulerDeg[key] = val;                      // original key (e.g. "thigh.R")
+    eulerDeg[normalizeBoneName(key)] = val;   // normalized  (e.g. "thighR")
+  }
+
+  skeleton.bones.forEach(bone => {
+    const deg = eulerDeg[bone.name];
+    if (deg && (deg[0] !== 0 || deg[1] !== 0 || deg[2] !== 0)) {
+      _boneDegrees[bone.name] = [...deg];
+    } else {
+      _boneDegrees[bone.name] = [0, 0, 0];
+    }
+    applyBoneDegrees(bone);
+  });
+  console.log('[ARES] Pose applied. Non-zero bones:',
+    Object.entries(_boneDegrees)
+      .filter(([_, d]) => d[0] !== 0 || d[1] !== 0 || d[2] !== 0)
+      .map(([n, d]) => `${n}=[${d}]`)
+  );
+}
+
+/* ── Ref panel drag ──────────────────────────────────────────────────────── */
+const panel = document.getElementById('ref-panel');
+const refHeader = document.getElementById('ref-header');
+let dragging = false, ox = 0, oy = 0;
+refHeader.addEventListener('mousedown', e => {
+  dragging = true;
+  const r = panel.getBoundingClientRect();
+  panel.style.right = panel.style.bottom = 'unset';
+  panel.style.left = r.left + 'px'; panel.style.top = r.top + 'px';
+  ox = e.clientX - r.left; oy = e.clientY - r.top;
+  e.preventDefault();
+});
+window.addEventListener('mousemove', e => { if (dragging) { panel.style.left = (e.clientX - ox) + 'px'; panel.style.top = (e.clientY - oy) + 'px'; } });
+window.addEventListener('mouseup', () => { dragging = false; });
+
+/* ── Image carousel ──────────────────────────────────────────────────────── */
+const refImg = document.getElementById('ref-img');
+const refLabel = document.getElementById('ref-label');
+const counter  = document.getElementById('ref-counter');
+let images = [], imgIdx = 0;
+function showImage(idx) {
+  if (!images.length) return;
+  imgIdx = (idx + images.length) % images.length;
+  refImg.src = images[imgIdx].src;
+  refLabel.textContent = images[imgIdx].label;
+  counter.textContent  = `${imgIdx+1} / ${images.length}`;
+}
+document.getElementById('btn-prev').addEventListener('click', () => showImage(imgIdx-1));
+document.getElementById('btn-next').addEventListener('click', () => showImage(imgIdx+1));
+
+/* ── Three.js scene ──────────────────────────────────────────────────────── */
+const status = document.getElementById('status');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(devicePixelRatio);
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a2e);
+scene.fog = new THREE.Fog(0x1a1a2e, 20, 60);
+
+const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.01, 100);
+camera.position.set(0, 1.4, 4.5);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 1.0, 0);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.minDistance = 0.5; controls.maxDistance = 20;
+controls.update();
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const sun = new THREE.DirectionalLight(0xffffff, 1.4);
+sun.position.set(4, 8, 4); sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = sun.shadow.camera.bottom = -5;
+sun.shadow.camera.right = sun.shadow.camera.top = 5;
+scene.add(sun);
+scene.add(new THREE.DirectionalLight(0x8888ff, 0.4).translateX(-4).translateY(2).translateZ(-2));
+
+scene.add(new THREE.GridHelper(20, 20, 0x00ffe7, 0x223344));
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(20, 20),
+  new THREE.MeshStandardMaterial({ color: 0x0d1117, roughness: 0.9, transparent: true, opacity: 0.85 })
+);
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true;
+scene.add(ground);
+
+/* ── Bone tester — sliders read/write _boneDegrees directly ──────────── */
+let _selectedBone = null;
+
+function setSelectedBone(bone) {
+  _selectedBone = bone;
+  document.getElementById('selected-bone-name').textContent = bone ? bone.name : 'none';
+  if (bone) {
+    const [xd, yd, zd] = _boneDegrees[bone.name] || [0, 0, 0];
+    document.getElementById('slider-x').value = Math.round(xd);
+    document.getElementById('slider-y').value = Math.round(yd);
+    document.getElementById('slider-z').value = Math.round(zd);
+    console.log(`[ARES] Selected ${bone.name} — degrees: X:${xd} Y:${yd} Z:${zd}`);
+  } else {
+    document.getElementById('slider-x').value = 0;
+    document.getElementById('slider-y').value = 0;
+    document.getElementById('slider-z').value = 0;
+  }
+  updateAngleDisplay();
+}
+
+function updateAngleDisplay() {
+  document.getElementById('angle-display').textContent =
+    `X: ${document.getElementById('slider-x').value}°  ` +
+    `Y: ${document.getElementById('slider-y').value}°  ` +
+    `Z: ${document.getElementById('slider-z').value}°`;
+}
+
+function onSliderInput() {
+  if (!_selectedBone) return;
+  const xd = parseFloat(document.getElementById('slider-x').value);
+  const yd = parseFloat(document.getElementById('slider-y').value);
+  const zd = parseFloat(document.getElementById('slider-z').value);
+  _boneDegrees[_selectedBone.name] = [xd, yd, zd];
+  applyBoneDegrees(_selectedBone);
+  updateAngleDisplay();
+}
+
+['slider-x', 'slider-y', 'slider-z'].forEach(id =>
+  document.getElementById(id).addEventListener('input', onSliderInput)
+);
+
+/* ── Armature toggle ─────────────────────────────────────────────────── */
+let _skeletonHelper = null;
+function initArmatureToggle(model) {
+  _skeletonHelper = new THREE.SkeletonHelper(model);
+  _skeletonHelper.visible = true;
+  scene.add(_skeletonHelper);
+  document.getElementById('toggle-armature').addEventListener('change', e => {
+    if (_skeletonHelper) _skeletonHelper.visible = e.target.checked;
+  });
+}
+
+/* ── Bone tree + highlight + labels ──────────────────────────────────── */
+const labelsContainer = document.getElementById('bone-labels');
+let _highlightedBones = new Set();
+let _boneLabels = {};
+
+function buildBoneTree(bones) {
+  const boneSet = new Set(bones.map(b => b.name));
+  const roots = bones.filter(b => !b.parent || !boneSet.has(b.parent.name));
+  const container = document.getElementById('bone-tree');
+  container.innerHTML = '';
+
+  function addNode(bone, depth) {
+    const row = document.createElement('div');
+    row.className = 'bone-item';
+    const indent = document.createElement('span');
+    indent.className = 'bone-indent';
+    indent.style.width = (depth * 12) + 'px';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    const label = document.createElement('span');
+    label.textContent = bone.name;
+    row.appendChild(indent); row.appendChild(cb); row.appendChild(label);
+    container.appendChild(row);
+
+    cb.addEventListener('change', () => {
+      if (cb.checked) {
+        _highlightedBones.add(bone.name);
+        row.classList.add('highlighted');
+        setSelectedBone(bone);
+      } else {
+        _highlightedBones.delete(bone.name);
+        row.classList.remove('highlighted');
+        if (_selectedBone === bone) {
+          const fallback = _highlightedBones.size > 0 ? _skeleton.bones.find(b => _highlightedBones.has(b.name)) : null;
+          setSelectedBone(fallback);
+        }
+      }
+      updateSkeletonColors();
+    });
+
+    bone.children.forEach(child => { if (boneSet.has(child.name)) addNode(child, depth + 1); });
+  }
+  roots.forEach(r => addNode(r, 0));
+}
+
+function updateSkeletonColors() {
+  if (!_skeletonHelper) return;
+  const colors = _skeletonHelper.geometry.attributes.color;
+  if (!colors) return;
+  _skeleton.bones.forEach((bone, i) => {
+    const hi = _highlightedBones.has(bone.name);
+    colors.setXYZ(i * 2,     hi ? 1 : 1, hi ? 0.18 : 1, hi ? 0.61 : 1);
+    colors.setXYZ(i * 2 + 1, hi ? 1 : 1, hi ? 0.18 : 1, hi ? 0.61 : 1);
+  });
+  colors.needsUpdate = true;
+}
+
+function initBoneLabels(bones) {
+  labelsContainer.innerHTML = '';
+  _boneLabels = {};
+  bones.forEach(bone => {
+    const div = document.createElement('div');
+    div.className = 'bone-label';
+    div.textContent = bone.name;
+    div.style.display = 'none';
+    labelsContainer.appendChild(div);
+    _boneLabels[bone.name] = div;
+  });
+}
+
+const _tmpVec = new THREE.Vector3();
+function updateBoneLabels() {
+  if (!_skeleton) return;
+  _skeleton.bones.forEach(bone => {
+    const div = _boneLabels[bone.name];
+    if (!div) return;
+    if (!_highlightedBones.has(bone.name)) { div.style.display = 'none'; return; }
+    bone.getWorldPosition(_tmpVec);
+    _tmpVec.project(camera);
+    div.style.display = 'block';
+    div.style.left = ((_tmpVec.x * 0.5 + 0.5) * innerWidth) + 'px';
+    div.style.top  = ((-_tmpVec.y * 0.5 + 0.5) * innerHeight) + 'px';
+  });
+}
+
+/* ── Axis Gizmo ──────────────────────────────────────────────────────── */
+const gizmoEl = document.getElementById('axis-gizmo');
+const gizmoRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+gizmoRenderer.setPixelRatio(devicePixelRatio);
+gizmoRenderer.setSize(90, 90);
+gizmoEl.appendChild(gizmoRenderer.domElement);
+const gizmoScene = new THREE.Scene();
+const gizmoCamera = new THREE.PerspectiveCamera(40, 1, 0.1, 10);
+gizmoCamera.position.set(0, 0, 3); gizmoCamera.lookAt(0, 0, 0);
+const gizmoGroup = new THREE.Group();
+gizmoGroup.scale.setScalar(0.8);
+gizmoScene.add(gizmoGroup);
+
+function makeAxisArrow(dir, color, label) {
+  const g = new THREE.Group();
+  g.add(new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), dir.clone().multiplyScalar(0.9)]),
+    new THREE.LineBasicMaterial({ color, linewidth: 3 })
+  ));
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.22, 12), new THREE.MeshBasicMaterial({ color }));
+  cone.position.copy(dir.clone().multiplyScalar(1.0));
+  cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+  g.add(cone);
+  if (label) {
+    const c = document.createElement('canvas'); c.width = c.height = 64;
+    const ctx = c.getContext('2d');
+    ctx.font = 'bold 44px monospace';
+    ctx.fillStyle = '#' + color.toString(16).padStart(6, '0');
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, 32, 32);
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true }));
+    s.scale.set(0.4, 0.4, 1);
+    s.position.copy(dir.clone().multiplyScalar(1.35));
+    g.add(s);
+  }
+  return g;
+}
+gizmoGroup.add(makeAxisArrow(new THREE.Vector3(1, 0, 0), 0xff4444, 'X'));
+gizmoGroup.add(makeAxisArrow(new THREE.Vector3(-1, 0, 0), 0x991111, ''));
+gizmoGroup.add(makeAxisArrow(new THREE.Vector3(0, 1, 0), 0x44ff44, 'Y'));
+gizmoGroup.add(makeAxisArrow(new THREE.Vector3(0, -1, 0), 0x119911, ''));
+gizmoGroup.add(makeAxisArrow(new THREE.Vector3(0, 0, 1), 0x4488ff, 'Z'));
+gizmoGroup.add(makeAxisArrow(new THREE.Vector3(0, 0, -1), 0x1144aa, ''));
+
+function renderGizmo() {
+  gizmoCamera.position.copy(camera.position).sub(controls.target).normalize().multiplyScalar(3);
+  gizmoCamera.lookAt(0, 0, 0);
+  gizmoRenderer.render(gizmoScene, gizmoCamera);
+}
+
+/* ── Undo / Reset ────────────────────────────────────────────────────── */
+let _initialDegrees = {};
+let _undoStack = [];
+const MAX_UNDO = 100;
+
+function snapshotInitial() {
+  _initialDegrees = {};
+  for (const [name, deg] of Object.entries(_boneDegrees)) {
+    _initialDegrees[name] = [...deg];
+  }
+}
+
+function pushUndo(bone) {
+  if (!bone) return;
+  _undoStack.push({ boneName: bone.name, prev: [...(_boneDegrees[bone.name] || [0,0,0])] });
+  if (_undoStack.length > MAX_UNDO) _undoStack.shift();
+  updateUndoButton();
+}
+
+function undo() {
+  const entry = _undoStack.pop();
+  if (!entry || !_skeleton) return;
+  const bone = _skeleton.bones.find(b => b.name === entry.boneName);
+  if (bone) {
+    _boneDegrees[bone.name] = [...entry.prev];
+    applyBoneDegrees(bone);
+    if (_selectedBone && _selectedBone.name === bone.name) setSelectedBone(bone);
+  }
+  updateUndoButton();
+}
+
+function resetPose() {
+  if (!_skeleton) return;
+  _skeleton.bones.forEach(b => {
+    _undoStack.push({ boneName: b.name, prev: [...(_boneDegrees[b.name] || [0,0,0])] });
+    _boneDegrees[b.name] = [...(_initialDegrees[b.name] || [0,0,0])];
+    applyBoneDegrees(b);
+  });
+  while (_undoStack.length > MAX_UNDO) _undoStack.shift();
+  if (_selectedBone) setSelectedBone(_selectedBone);
+  updateUndoButton();
+}
+
+function updateUndoButton() {
+  document.getElementById('btn-undo').disabled = _undoStack.length === 0;
+}
+
+['slider-x', 'slider-y', 'slider-z'].forEach(id => {
+  document.getElementById(id).addEventListener('pointerdown', () => { if (_selectedBone) pushUndo(_selectedBone); });
+});
+document.getElementById('btn-undo').addEventListener('click', undo);
+document.getElementById('btn-reset').addEventListener('click', resetPose);
+window.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+});
+updateUndoButton();
+
+/* ── Export — writes euler_degrees only ───────────────────────────────── */
+document.getElementById('btn-export').addEventListener('click', () => {
+  if (!_skeleton) return;
+  const eulerDeg = {};
+  for (const [name, deg] of Object.entries(_boneDegrees)) {
+    eulerDeg[name] = [Math.round(deg[0] * 10) / 10, Math.round(deg[1] * 10) / 10, Math.round(deg[2] * 10) / 10];
+  }
+  const data = {
+    image: (images[0] && images[0].src) || 'test-image.png',
+    landmarks: [],
+    euler_degrees: eulerDeg,
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'pose.json'; a.click();
+  URL.revokeObjectURL(url);
+  status.textContent = `✓ Exported pose.json — ${Object.keys(eulerDeg).length} bones`;
+});
+
+/* ── Load pose from JSON ─────────────────────────────────────────────── */
+function loadPoseFromJSON(poseData, fileName) {
+  if (poseData.image) {
+    images = [
+      { src: poseData.image, label: 'ORIGINAL' },
+      { src: 'output_landmarks.jpg', label: 'ANNOTATED' },
+    ];
+    showImage(0);
+  }
+  if (_skeleton) {
+    applyPose(_skeleton, poseData);
+    snapshotInitial();
+    _undoStack = [];
+    updateUndoButton();
+    if (_selectedBone) setSelectedBone(_selectedBone);
+  }
+  const dz = document.getElementById('json-drop');
+  dz.innerHTML = '<span id="json-drop-icon">✓</span>' + fileName.replace('.json', '') + '<br>loaded';
+  dz.classList.add('loaded');
+  status.textContent = `✓ Loaded ${fileName}`;
+}
+
+/* ── Drag & drop ─────────────────────────────────────────────────────── */
+const dropOverlay = document.getElementById('drop-overlay');
+window.addEventListener('dragenter', e => { e.preventDefault(); dropOverlay.classList.add('active'); });
+window.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+window.addEventListener('dragleave', e => { if (e.clientX === 0 && e.clientY === 0) dropOverlay.classList.remove('active'); });
+window.addEventListener('drop', async e => {
+  e.preventDefault(); dropOverlay.classList.remove('active');
+  const file = e.dataTransfer.files[0];
+  if (!file || !file.name.toLowerCase().endsWith('.json')) { status.textContent = '✗ not a .json file'; return; }
+  try {
+    const poseData = JSON.parse(await file.text());
+    if (!poseData.euler_degrees) { status.textContent = '✗ JSON has no euler_degrees'; return; }
+    loadPoseFromJSON(poseData, file.name);
+  } catch (err) { console.error(err); status.textContent = `✗ ${err.message}`; }
+});
+
+const dropZone = document.getElementById('json-drop');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (!file || !file.name.endsWith('.json')) { dropZone.textContent = '✗ not JSON'; return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const poseData = JSON.parse(ev.target.result);
+      if (!poseData.euler_degrees) throw new Error('no euler_degrees');
+      loadPoseFromJSON(poseData, file.name);
+    } catch (err) { dropZone.textContent = '✗ parse error'; console.error(err); }
+  };
+  reader.readAsText(file);
+});
+dropZone.addEventListener('click', () => {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = e => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const poseData = JSON.parse(ev.target.result);
+        if (!poseData.euler_degrees) throw new Error('no euler_degrees');
+        loadPoseFromJSON(poseData, file.name);
+      } catch (err) { dropZone.textContent = '✗ parse error'; console.error(err); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+});
+
+/* ── Initial load ────────────────────────────────────────────────────── */
+fetch('pose.json')
+  .then(r => { if (!r.ok) throw new Error('pose.json not found'); return r.json(); })
+  .then(poseData => {
+    const base = poseData.image || 'test-image.png';
+    images = [
+      { src: base, label: 'ORIGINAL' },
+      { src: 'output_landmarks.jpg', label: 'ANNOTATED' },
+    ];
+    showImage(0);
+    status.textContent = 'Pose loaded — loading model…';
+    return new Promise((resolve, reject) => {
+      new GLTFLoader().load(
+        'manequinn.glb',
+        gltf => resolve({ gltf, poseData }),
+        xhr => { if (xhr.total) status.textContent = `Model ${Math.round(xhr.loaded / xhr.total * 100)}%…`; },
+        reject
+      );
+    });
+  })
+  .then(({ gltf, poseData }) => {
+    const model = gltf.scene;
+    const box = new THREE.Box3().setFromObject(model);
+    model.position.y -= box.min.y;
+    model.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
+    scene.add(model);
+
+    let skinnedMesh = null;
+    model.traverse(n => { if (n.isSkinnedMesh && !skinnedMesh) skinnedMesh = n; });
+    if (!skinnedMesh) { status.textContent = 'WARNING: no SkinnedMesh found'; return; }
+
+    _skeleton = skinnedMesh.skeleton;
+    console.log('[ARES] Bones:', _skeleton.bones.map(b => b.name));
+
+    captureBindPose(_skeleton);
+    applyPose(_skeleton, poseData);
+    snapshotInitial();
+    initArmatureToggle(model);
+    buildBoneTree(_skeleton.bones);
+    initBoneLabels(_skeleton.bones);
+
+    const nonZero = Object.entries(_boneDegrees).filter(([_, d]) => d[0] || d[1] || d[2]);
+    status.textContent = `✓ Pose applied — ${nonZero.length} bones with rotation`;
+  })
+  .catch(err => { console.error(err); status.textContent = `✗ ${err.message}`; });
+
+/* ── Resize ──────────────────────────────────────────────────────────── */
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+/* ── Render loop ─────────────────────────────────────────────────────── */
+(function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+  renderGizmo();
+  updateBoneLabels();
+})();
+</script>
+</body>
+</html>
