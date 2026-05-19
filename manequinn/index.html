@@ -8,74 +8,105 @@
   body { background: #1a1a2e; overflow: hidden; font-family: monospace; }
   canvas { display: block; }
 
-  #ui {
-    position: fixed; top: 16px; left: 16px;
-    color: #00ffe7; font-size: 12px; line-height: 1.8;
-    pointer-events: none;
-  }
-  #status {
-    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
-    color: #fff; font-size: 13px; background: rgba(0,0,0,0.5);
-    padding: 6px 14px; border-radius: 20px;
-    pointer-events: none;
-  }
+  #ui { position: fixed; top: 16px; left: 16px; color: #00ffe7; font-size: 12px; line-height: 1.8; pointer-events: none; }
+  #status { position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 13px; background: rgba(0,0,0,0.5); padding: 6px 14px; border-radius: 20px; pointer-events: none; transition: opacity 0.3s; }
 
+  /* ── Animation Player ─────────────────────────────────────────────── */
+  #anim-player {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    background: rgba(10, 12, 20, 0.94); border: 1px solid #00ffe7; border-radius: 12px;
+    padding: 10px 16px 12px; width: 620px; max-width: calc(100vw - 32px);
+    z-index: 20; display: none; flex-direction: column; gap: 8px;
+    box-shadow: 0 4px 32px rgba(0,255,231,0.12);
+  }
+  #anim-player.visible { display: flex; }
+  #anim-top { display: flex; align-items: center; gap: 10px; }
+  #btn-play-pause {
+    background: rgba(0,255,231,0.14); border: 1px solid #00ffe7; color: #00ffe7;
+    font-size: 18px; width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s; line-height: 1;
+  }
+  #btn-play-pause:hover { background: rgba(0,255,231,0.28); }
+  #anim-frame-info { color: #00ffe7; font-size: 11px; min-width: 72px; text-align: center; flex-shrink: 0; }
+  #scrubber-wrap { flex: 1; display: flex; align-items: center; }
+  #scrubber { width: 100%; accent-color: #00ffe7; cursor: pointer; height: 4px; }
+  #fps-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  #fps-label { color: #aaa; font-size: 11px; }
+  #fps-input { width: 52px; background: rgba(0,255,231,0.08); border: 1px solid #00ffe740; border-radius: 4px; color: #00ffe7; font-family: monospace; font-size: 12px; padding: 3px 6px; text-align: center; outline: none; }
+  #fps-input:focus { border-color: #00ffe7; }
+  #anim-bottom { display: flex; align-items: center; gap: 10px; }
+  #anim-timeline { flex: 1; height: 8px; background: rgba(0,255,231,0.08); border-radius: 4px; position: relative; overflow: hidden; cursor: pointer; }
+  #anim-progress { height: 100%; background: linear-gradient(90deg, #00ffe7, #ff2d9b); border-radius: 4px; width: 0%; transition: width 0.05s linear; pointer-events: none; }
+  #anim-time { color: #666; font-size: 10px; flex-shrink: 0; min-width: 70px; text-align: right; }
+  #btn-loop { background: rgba(0,255,231,0.08); border: 1px solid #00ffe740; color: #00ffe780; font-family: monospace; font-size: 11px; padding: 4px 8px; border-radius: 4px; cursor: pointer; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
+  #btn-loop.active { background: rgba(0,255,231,0.18); color: #00ffe7; border-color: #00ffe7; }
+  #btn-loop:hover { background: rgba(0,255,231,0.18); }
+  #anim-label { color: #00ffe7; font-size: 10px; letter-spacing: 0.06em; opacity: 0.7; flex-shrink: 0; }
+
+  /* ── Bone tester panel ────────────────────────────────────────────── */
   #bone-tester {
-    position: fixed; top: 16px; right: 16px;
-    background: rgba(10,12,20,0.92);
-    border: 1px solid #00ffe7;
-    border-radius: 8px;
-    padding: 10px 14px;
-    color: #00ffe7;
-    font-size: 12px;
-    z-index: 10;
-    width: 220px;
-    max-height: calc(100vh - 32px);
-    overflow-y: auto;
+    position: fixed; top: 16px; right: 16px; background: rgba(10,12,20,0.92);
+    border: 1px solid #00ffe7; border-radius: 8px; padding: 10px 14px;
+    color: #00ffe7; font-size: 12px; z-index: 10; width: 220px;
+    max-height: calc(100vh - 32px); overflow-y: auto;
   }
   #bone-tester .section-title { letter-spacing: 0.05em; margin-bottom: 8px; }
   #bone-tester .axis-label { margin-bottom: 4px; color: #aaa; }
   #bone-tester input[type=range] { width: 100%; accent-color: #00ffe7; }
   #angle-display { margin-top: 6px; color: #666; font-size: 11px; }
-
   .check-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; cursor: pointer; color: #ccc; }
   .check-row input { accent-color:#00ffe7; width:14px; height:14px; cursor:pointer; }
-
   #bone-tree-wrap { margin-top: 8px; border-top: 1px solid #223344; padding-top: 8px; }
   #bone-tree-wrap .tree-title { color: #aaa; font-size: 11px; margin-bottom: 6px; letter-spacing: 0.04em; }
-  #bone-tree { max-height: 260px; overflow-y: auto; font-size: 11px; }
+  #bone-tree { max-height: 220px; overflow-y: auto; font-size: 11px; }
   .bone-item { display: flex; align-items: center; gap: 6px; padding: 3px 4px; border-radius: 4px; cursor: pointer; color: #ccc; white-space: nowrap; transition: background 0.1s; }
   .bone-item:hover { background: rgba(255,255,255,0.06); }
   .bone-item.highlighted { color: #ff2d9b; }
   .bone-item input[type=checkbox] { accent-color: #ff2d9b; width: 12px; height: 12px; cursor: pointer; flex-shrink: 0; }
   .bone-indent { display: inline-block; width: 12px; flex-shrink: 0; }
 
-  #ref-panel { position: fixed; bottom: 16px; right: 16px; width: 220px; background: rgba(10,12,20,0.88); border: 1px solid #00ffe7; border-radius: 8px; overflow: hidden; user-select: none; box-shadow: 0 4px 24px rgba(0,0,0,0.6); z-index: 10; }
-  #ref-header { display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; border-bottom: 1px solid #223344; cursor: grab; background: rgba(0,255,231,0.07); }
+  /* ── Reference / Video panel ─────────────────────────────────────── */
+  #ref-panel {
+    position: fixed; bottom: 96px; right: 16px; width: 280px; min-width: 160px; max-width: 700px;
+    background: rgba(10,12,20,0.92); border: 1px solid #00ffe7; border-radius: 8px;
+    overflow: visible; user-select: none; box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+    z-index: 10; display: flex; flex-direction: column;
+  }
+  #ref-header { display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; border-bottom: 1px solid #223344; cursor: grab; background: rgba(0,255,231,0.07); border-radius: 8px 8px 0 0; flex-shrink: 0; }
   #ref-header:active { cursor: grabbing; }
   #ref-label { color: #00ffe7; font-size: 11px; letter-spacing: 0.05em; }
-  #ref-nav { display: flex; gap: 4px; align-items: center; }
-  .nav-btn { background: rgba(0,255,231,0.12); border: 1px solid #00ffe740; color: #00ffe7; font-size: 15px; line-height: 1; width: 22px; height: 22px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
-  .nav-btn:hover { background: rgba(0,255,231,0.28); }
-  #ref-counter { color: #aaa; font-size: 10px; min-width: 28px; text-align: center; }
-  #ref-img { display: block; width: 100%; height: auto; max-height: 360px; object-fit: contain; background: #0d1117; }
-
+  #ref-tabs { display: flex; border-bottom: 1px solid #223344; flex-shrink: 0; }
+  .ref-tab { flex: 1; padding: 4px 0; text-align: center; font-size: 10px; font-family: monospace; letter-spacing: 0.05em; color: #aaa; cursor: pointer; background: transparent; border: none; border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s; }
+  .ref-tab:hover { color: #00ffe7; }
+  .ref-tab.active { color: #00ffe7; border-bottom-color: #00ffe7; }
+  #ref-content { position: relative; background: #0d1117; border-radius: 0 0 8px 8px; overflow: hidden; flex: 1; min-height: 80px; }
+  #ref-content video, #ref-content img { display: block; width: 100%; height: 100%; object-fit: contain; background: #0d1117; }
+  .ref-pane { display: none; width: 100%; height: 100%; }
+  .ref-pane.active { display: block; }
+  .vid-controls { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.75)); padding: 18px 8px 6px; display: flex; align-items: center; gap: 6px; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+  #ref-content:hover .vid-controls { opacity: 1; pointer-events: auto; }
+  .vid-btn { background: rgba(0,255,231,0.16); border: 1px solid #00ffe740; color: #00ffe7; font-size: 13px; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+  .vid-btn:hover { background: rgba(0,255,231,0.32); }
+  .vid-seek { flex: 1; accent-color: #00ffe7; height: 3px; cursor: pointer; }
+  .vid-time { color: #aaa; font-size: 9px; flex-shrink: 0; }
+  #ref-resize-s { position: absolute; bottom: -5px; left: 12px; right: 12px; height: 10px; cursor: s-resize; z-index: 20; }
+  #ref-resize-e { position: absolute; top: 28px; right: -5px; bottom: 5px; width: 10px; cursor: e-resize; z-index: 20; }
+  #ref-resize-se { position: absolute; bottom: -6px; right: -6px; width: 14px; height: 14px; cursor: se-resize; z-index: 21; background: rgba(0,255,231,0.25); border-radius: 0 0 6px 0; border-right: 2px solid #00ffe780; border-bottom: 2px solid #00ffe780; }
   #axis-gizmo { position: fixed; top: 16px; right: 254px; width: 90px; height: 90px; z-index: 10; pointer-events: none; }
-
   .tester-btn { flex: 1; background: rgba(0,255,231,0.12); border: 1px solid #00ffe740; color: #00ffe7; font-family: monospace; font-size: 11px; padding: 5px 8px; border-radius: 4px; cursor: pointer; transition: background 0.15s; }
   .tester-btn:hover { background: rgba(0,255,231,0.28); }
   .tester-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
   #drop-overlay { position: fixed; inset: 0; background: rgba(0,255,231,0.12); border: 4px dashed #00ffe7; display: none; align-items: center; justify-content: center; color: #00ffe7; font-size: 24px; letter-spacing: 0.08em; z-index: 1000; pointer-events: none; }
   #drop-overlay.active { display: flex; }
-
   #json-drop { position: fixed; top: 114px; right: 254px; width: 90px; background: rgba(10,12,20,0.75); border: 1px dashed #00ffe740; border-radius: 6px; padding: 8px 4px; z-index: 10; text-align: center; font-size: 9px; color: #00ffe780; cursor: pointer; transition: border-color 0.15s, background 0.15s; line-height: 1.4; user-select: none; }
   #json-drop.drag-over { border-color: #00ffe7; background: rgba(0,255,231,0.12); color: #00ffe7; }
   #json-drop.loaded { border-color: #44ff44; color: #44ff44; }
   #json-drop-icon { font-size: 16px; display: block; margin-bottom: 3px; }
-
   #bone-labels { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 5; }
   .bone-label { position: absolute; font-size: 10px; font-family: monospace; color: #ff2d9b; background: rgba(0,0,0,0.55); padding: 1px 4px; border-radius: 3px; transform: translate(-50%, -50%); white-space: nowrap; pointer-events: none; }
+  #mode-badge { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: rgba(10,12,20,0.85); border: 1px solid #ff2d9b; border-radius: 20px; padding: 3px 14px; color: #ff2d9b; font-size: 11px; letter-spacing: 0.08em; z-index: 15; display: none; pointer-events: none; }
+  #mode-badge.visible { display: block; }
 </style>
 </head>
 <body>
@@ -83,9 +114,9 @@
 <div id="drop-overlay">DROP pose.json HERE</div>
 <div id="ui">ARES Analysis<br><span style="color:#888">Orbit: left drag | Zoom: scroll | Pan: right drag</span></div>
 <div id="status">Loading…</div>
+<div id="mode-badge">● ANIMATION</div>
 <div id="bone-labels"></div>
 <div id="axis-gizmo"></div>
-
 <div id="json-drop"><span id="json-drop-icon">⬇</span>drop<br>pose.json</div>
 
 <div id="bone-tester">
@@ -105,6 +136,7 @@
     <button id="btn-export" class="tester-btn" style="flex:1;">Export pose.json</button>
   </div>
   <label class="check-row"><input type="checkbox" id="toggle-armature" checked> Show armature</label>
+  <label class="check-row"><input type="checkbox" id="toggle-lerp"> Smooth interpolation (lerp)</label>
   <div id="bone-tree-wrap">
     <div class="tree-title">SKELETON — click to highlight</div>
     <div id="bone-tree"></div>
@@ -114,13 +146,56 @@
 <div id="ref-panel">
   <div id="ref-header">
     <span id="ref-label">REFERENCE</span>
-    <div id="ref-nav">
-      <button class="nav-btn" id="btn-prev">&#8249;</button>
-      <span id="ref-counter">– / –</span>
-      <button class="nav-btn" id="btn-next">&#8250;</button>
+    <span style="color:#555;font-size:10px;pointer-events:none;">drag ↕→ resize</span>
+  </div>
+  <div id="ref-tabs">
+    <button class="ref-tab active" data-tab="original">ORIGINAL</button>
+    <button class="ref-tab"        data-tab="annotated">ANNOTATED</button>
+  </div>
+  <div id="ref-content" style="height:200px;">
+    <div class="ref-pane active" id="pane-original">
+      <video id="vid-original" loop playsinline muted preload="metadata" style="display:none;"></video>
+      <img   id="img-original" alt="original" style="display:none;"/>
+      <div id="orig-spinner" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#00ffe740;font-size:11px;">loading…</div>
+    </div>
+    <div class="ref-pane" id="pane-annotated">
+      <video id="vid-annotated" loop playsinline muted preload="metadata" style="display:none;"></video>
+      <img   id="img-annotated" alt="annotated" style="display:none;"/>
+      <div id="anno-spinner" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#00ffe740;font-size:11px;">loading…</div>
+    </div>
+    <div class="vid-controls" id="vid-controls">
+      <button class="vid-btn" id="vid-btn-play">▶</button>
+      <input  class="vid-seek" type="range" id="vid-seek" min="0" max="100" step="0.1" value="0">
+      <span   class="vid-time" id="vid-time">0:00</span>
+      <button class="vid-btn" id="vid-btn-mute" title="Mute">🔇</button>
     </div>
   </div>
-  <img id="ref-img" src="test-image.png" alt="reference pose"/>
+  <div id="ref-resize-s"></div>
+  <div id="ref-resize-e"></div>
+  <div id="ref-resize-se"></div>
+</div>
+
+<!-- Animation Player -->
+<div id="anim-player">
+  <div id="anim-top">
+    <button id="btn-play-pause" title="Play / Pause (Space)">▶</button>
+    <div id="scrubber-wrap">
+      <input id="scrubber" type="range" min="0" max="0" value="0" step="1">
+    </div>
+    <div id="anim-frame-info">0 / 0</div>
+    <button id="btn-loop" class="active" title="Toggle loop">↺ LOOP</button>
+    <div id="fps-wrap">
+      <span id="fps-label">FPS</span>
+      <input id="fps-input" type="number" min="0.1" max="240" value="30" step="0.5">
+    </div>
+  </div>
+  <div id="anim-bottom">
+    <span id="anim-label">ANIMATION</span>
+    <div id="anim-timeline">
+      <div id="anim-progress"></div>
+    </div>
+    <span id="anim-time">0.00s / 0.00s</span>
+  </div>
 </div>
 
 <script type="importmap">
@@ -135,107 +210,317 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader }    from 'three/addons/loaders/GLTFLoader.js';
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   REFERENCE PANEL — load video with fallback to image.
+   ALL paths are RELATIVE because index.html is served from manequinn/.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+function tryLoadVideo(videoEl, imgEl, spinnerEl, videoSrc, imgSrc) {
+  videoEl.src = videoSrc + '?t=' + Date.now();
+  videoEl.muted = true;
+  videoEl.loop = true;
+
+  let resolved = false;
+  function showVideo() {
+    if (resolved) return; resolved = true;
+    if (spinnerEl) spinnerEl.style.display = 'none';
+    imgEl.style.display = 'none';
+    videoEl.style.display = 'block';
+    videoEl.play().catch(() => {});
+  }
+  function showImage() {
+    if (resolved) return; resolved = true;
+    if (spinnerEl) spinnerEl.style.display = 'none';
+    videoEl.style.display = 'none';
+    videoEl.removeAttribute('src');
+    videoEl.load();
+    imgEl.src = imgSrc;
+    imgEl.style.display = 'block';
+  }
+
+  videoEl.addEventListener('loadedmetadata', showVideo, { once: true });
+  videoEl.addEventListener('error', showImage, { once: true });
+  setTimeout(() => { if (!resolved) showImage(); }, 4000);
+}
+
+// Original pane: test-vid.mp4 → fallback test-image.png (RELATIVE paths!)
+tryLoadVideo(
+  document.getElementById('vid-original'),
+  document.getElementById('img-original'),
+  document.getElementById('orig-spinner'),
+  'test-vid.mp4',
+  'test-image.png'
+);
+
+// Annotated pane: output_landmarks.mp4 → fallback output_landmarks.jpg (RELATIVE!)
+tryLoadVideo(
+  document.getElementById('vid-annotated'),
+  document.getElementById('img-annotated'),
+  document.getElementById('anno-spinner'),
+  'output_landmarks.mp4',
+  'output_landmarks.jpg'
+);
+
 /* ───────────────────────────────────────────────────────────────────────────
-   CORE DATA MODEL — everything is Euler degrees, no quaternions in storage.
-
-   _boneDegrees[boneName] = [xDeg, yDeg, zDeg]   (0-360, default [0,0,0])
-
-   To apply:
-     deltaQuat = Quaternion.fromEuler(x°, y°, z°)
-     bone.quaternion = bindPose * deltaQuat
-
-   Sliders read/write _boneDegrees directly — no conversion, no round-trip.
+   CORE DATA MODEL
    ─────────────────────────────────────────────────────────────────────────── */
 
-let _bindPose    = {};   // boneName → THREE.Quaternion (captured once from GLB)
-let _boneDegrees = {};   // boneName → [x, y, z] degrees (the single source of truth)
+let _bindPose    = {};
+let _boneDegrees = {};
 let _skeleton    = null;
+
+let _animFrames  = [];
+let _animFps     = 30;
+let _animIdx     = 0;
+let _animPlaying = false;
+let _animLoop    = true;
+let _animTimer   = null;
+let _isAnimMode  = false;
+
+// Lerp state
+let _lerpEnabled = false;
+let _lerpFactor  = 0.25;
+let _lerpTarget  = {};
+let _lerpCurrent = {};
 
 const DEG2RAD = Math.PI / 180;
 
 function captureBindPose(skeleton) {
   _bindPose = {};
   skeleton.bones.forEach(b => { _bindPose[b.name] = b.quaternion.clone(); });
-  console.log('[ARES] Bind pose captured:', Object.keys(_bindPose).length, 'bones');
 }
 
-// Apply the euler degrees for one bone to its actual quaternion
 function applyBoneDegrees(bone) {
   const [xd, yd, zd] = _boneDegrees[bone.name] || [0, 0, 0];
   const delta = new THREE.Quaternion().setFromEuler(
     new THREE.Euler(xd * DEG2RAD, yd * DEG2RAD, zd * DEG2RAD, 'XYZ')
   );
   const bind = _bindPose[bone.name];
-  if (bind) {
-    bone.quaternion.copy(bind).multiply(delta);
-  } else {
-    bone.quaternion.copy(delta);
-  }
+  if (bind) bone.quaternion.copy(bind).multiply(delta);
+  else bone.quaternion.copy(delta);
 }
 
-// Apply full pose from a poseData object
-// Normalize a bone name: Blender uses dots (thigh.R) but GLB export strips them (thighR)
-function normalizeBoneName(name) {
-  return name.replace(/\./g, '');
+function normalizeBoneName(name) { return name.replace(/\./g, ''); }
+
+/**
+ * Normalize a frame from pose.json into a flat { boneName: [x,y,z] } map.
+ * Handles:
+ *   { "frame": N, "euler_degrees": { "torso": [x,y,z], ... } }  ← video format
+ *   { "torso": [x,y,z], ... }                                    ← flat format
+ *   { "euler_degrees": { "torso": [x,y,z], ... } }               ← image format
+ */
+function normalizeFrame(raw) {
+  const euler = raw.euler_degrees || raw;
+  const out = {};
+  for (const [key, val] of Object.entries(euler)) {
+    if (key === 'frame' || key === 'image' || key === 'source' || key === 'landmarks') continue;
+    if (!Array.isArray(val)) continue;
+    out[key] = val;
+    out[normalizeBoneName(key)] = val;
+  }
+  return out;
 }
 
-function applyPose(skeleton, poseData) {
-  const rawEuler = poseData.euler_degrees || {};
-
-  // Build a lookup that works with both naming conventions:
-  // Try the exact GLB bone name first, then try adding dots back in common patterns
-  // Also normalize all JSON keys by removing dots so they match GLB names
-  const eulerDeg = {};
-  for (const [key, val] of Object.entries(rawEuler)) {
-    eulerDeg[key] = val;                      // original key (e.g. "thigh.R")
-    eulerDeg[normalizeBoneName(key)] = val;   // normalized  (e.g. "thighR")
-  }
-
+function applyPoseFromEulerMap(skeleton, eulerMap) {
   skeleton.bones.forEach(bone => {
-    const deg = eulerDeg[bone.name];
-    if (deg && (deg[0] !== 0 || deg[1] !== 0 || deg[2] !== 0)) {
-      _boneDegrees[bone.name] = [...deg];
-    } else {
-      _boneDegrees[bone.name] = [0, 0, 0];
-    }
+    const deg = eulerMap[bone.name];
+    _boneDegrees[bone.name] = (deg && (deg[0] || deg[1] || deg[2])) ? [...deg] : [0, 0, 0];
     applyBoneDegrees(bone);
   });
-  console.log('[ARES] Pose applied. Non-zero bones:',
-    Object.entries(_boneDegrees)
-      .filter(([_, d]) => d[0] !== 0 || d[1] !== 0 || d[2] !== 0)
-      .map(([n, d]) => `${n}=[${d}]`)
-  );
 }
 
-/* ── Ref panel drag ──────────────────────────────────────────────────────── */
+/* ── Lerp helpers ────────────────────────────────────────────────────────── */
+function lerpAngle(a, b, t) {
+  let diff = b - a;
+  if (diff > 180) diff -= 360;
+  if (diff < -180) diff += 360;
+  return a + diff * t;
+}
+
+function applyLerpFrame(skeleton) {
+  skeleton.bones.forEach(bone => {
+    const target = _lerpTarget[bone.name] || [0,0,0];
+    if (!_lerpCurrent[bone.name]) _lerpCurrent[bone.name] = [...target];
+    const cur = _lerpCurrent[bone.name];
+    cur[0] = lerpAngle(cur[0], target[0], _lerpFactor);
+    cur[1] = lerpAngle(cur[1], target[1], _lerpFactor);
+    cur[2] = lerpAngle(cur[2], target[2], _lerpFactor);
+    _boneDegrees[bone.name] = [cur[0], cur[1], cur[2]];
+    applyBoneDegrees(bone);
+  });
+}
+
+/* ── Animation player logic ──────────────────────────────────────────────── */
+
+function animGotoFrame(idx) {
+  if (!_animFrames.length || !_skeleton) return;
+  _animIdx = Math.max(0, Math.min(idx, _animFrames.length - 1));
+  const frameData = _animFrames[_animIdx];
+
+  if (_lerpEnabled) {
+    _skeleton.bones.forEach(bone => {
+      const deg = frameData[bone.name] || [0,0,0];
+      _lerpTarget[bone.name] = [...deg];
+      if (!_lerpCurrent[bone.name]) _lerpCurrent[bone.name] = [...deg];
+    });
+  } else {
+    applyPoseFromEulerMap(_skeleton, frameData);
+  }
+
+  if (_selectedBone) setSelectedBone(_selectedBone);
+  updatePlayerUI();
+}
+
+function updatePlayerUI() {
+  const total = _animFrames.length;
+  const fps   = _animFps;
+  const dur   = total / fps;
+  const cur   = _animIdx / fps;
+  document.getElementById('scrubber').max   = Math.max(0, total - 1);
+  document.getElementById('scrubber').value = _animIdx;
+  document.getElementById('anim-frame-info').textContent = `${_animIdx + 1} / ${total}`;
+  document.getElementById('anim-progress').style.width   = total > 1 ? `${(_animIdx / (total - 1)) * 100}%` : '0%';
+  document.getElementById('anim-time').textContent = `${cur.toFixed(2)}s / ${dur.toFixed(2)}s`;
+  document.getElementById('btn-play-pause').textContent = _animPlaying ? '⏸' : '▶';
+}
+
+function animPlay() {
+  if (_animPlaying) return;
+  _animPlaying = true;
+  const ms = 1000 / Math.max(0.1, _animFps);
+  _animTimer = setInterval(() => {
+    if (_animIdx >= _animFrames.length - 1) {
+      if (_animLoop) animGotoFrame(0);
+      else { animPause(); animGotoFrame(_animFrames.length - 1); }
+    } else animGotoFrame(_animIdx + 1);
+  }, ms);
+  updatePlayerUI();
+}
+
+function animPause() {
+  if (!_animPlaying) return;
+  _animPlaying = false;
+  clearInterval(_animTimer);
+  _animTimer = null;
+  updatePlayerUI();
+}
+
+function animTogglePlay() { if (_animPlaying) animPause(); else animPlay(); }
+
+function setAnimFps(fps) {
+  _animFps = Math.max(0.1, Math.min(240, fps));
+  document.getElementById('fps-input').value = _animFps;
+  if (_animPlaying) { animPause(); animPlay(); }
+  updatePlayerUI();
+}
+
+document.getElementById('btn-play-pause').addEventListener('click', animTogglePlay);
+document.getElementById('scrubber').addEventListener('input', e => { animPause(); animGotoFrame(parseInt(e.target.value)); });
+document.getElementById('fps-input').addEventListener('change', e => { setAnimFps(parseFloat(e.target.value) || 30); });
+document.getElementById('btn-loop').addEventListener('click', () => { _animLoop = !_animLoop; document.getElementById('btn-loop').classList.toggle('active', _animLoop); });
+document.getElementById('anim-timeline').addEventListener('click', e => { const rect = e.currentTarget.getBoundingClientRect(); const pct = (e.clientX - rect.left) / rect.width; animPause(); animGotoFrame(Math.round(pct * Math.max(0, _animFrames.length - 1))); });
+
+// Lerp toggle
+document.getElementById('toggle-lerp').addEventListener('change', e => {
+  _lerpEnabled = e.target.checked;
+  if (_lerpEnabled && _skeleton) {
+    _skeleton.bones.forEach(bone => {
+      _lerpCurrent[bone.name] = [...(_boneDegrees[bone.name] || [0,0,0])];
+      _lerpTarget[bone.name] = [...(_boneDegrees[bone.name] || [0,0,0])];
+    });
+  }
+});
+
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT') { e.preventDefault(); animTogglePlay(); }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey && !_isAnimMode) { e.preventDefault(); undo(); }
+  if (e.key === 'ArrowRight' && _isAnimMode) { animPause(); animGotoFrame(_animIdx + 1); }
+  if (e.key === 'ArrowLeft'  && _isAnimMode) { animPause(); animGotoFrame(_animIdx - 1); }
+});
+
+function showPlayer(visible) {
+  document.getElementById('anim-player').classList.toggle('visible', visible);
+  document.getElementById('mode-badge').classList.toggle('visible', visible);
+  document.getElementById('status').style.bottom = visible ? '96px' : '16px';
+  document.getElementById('ref-panel').style.bottom = visible ? '96px' : '16px';
+}
+
+/* ── Ref panel: drag, resize, tabs, video controls ───────────────────────── */
 const panel = document.getElementById('ref-panel');
+const refContent = document.getElementById('ref-content');
 const refHeader = document.getElementById('ref-header');
-let dragging = false, ox = 0, oy = 0;
+
+let _pdrag = false, _pox = 0, _poy = 0;
 refHeader.addEventListener('mousedown', e => {
-  dragging = true;
+  if (e.target.closest('.ref-tab')) return;
+  _pdrag = true;
   const r = panel.getBoundingClientRect();
   panel.style.right = panel.style.bottom = 'unset';
   panel.style.left = r.left + 'px'; panel.style.top = r.top + 'px';
-  ox = e.clientX - r.left; oy = e.clientY - r.top;
-  e.preventDefault();
+  _pox = e.clientX - r.left; _poy = e.clientY - r.top; e.preventDefault();
 });
-window.addEventListener('mousemove', e => { if (dragging) { panel.style.left = (e.clientX - ox) + 'px'; panel.style.top = (e.clientY - oy) + 'px'; } });
-window.addEventListener('mouseup', () => { dragging = false; });
 
-/* ── Image carousel ──────────────────────────────────────────────────────── */
-const refImg = document.getElementById('ref-img');
-const refLabel = document.getElementById('ref-label');
-const counter  = document.getElementById('ref-counter');
-let images = [], imgIdx = 0;
-function showImage(idx) {
-  if (!images.length) return;
-  imgIdx = (idx + images.length) % images.length;
-  refImg.src = images[imgIdx].src;
-  refLabel.textContent = images[imgIdx].label;
-  counter.textContent  = `${imgIdx+1} / ${images.length}`;
+let _resizing = null, _rx0, _ry0, _rw0, _rh0;
+function startResize(mode, e) {
+  _resizing = mode;
+  const r = panel.getBoundingClientRect();
+  panel.style.right = panel.style.bottom = 'unset';
+  panel.style.left = r.left + 'px'; panel.style.top = r.top + 'px';
+  _rx0 = e.clientX; _ry0 = e.clientY; _rw0 = r.width; _rh0 = refContent.getBoundingClientRect().height;
+  e.preventDefault(); e.stopPropagation();
 }
-document.getElementById('btn-prev').addEventListener('click', () => showImage(imgIdx-1));
-document.getElementById('btn-next').addEventListener('click', () => showImage(imgIdx+1));
+document.getElementById('ref-resize-s').addEventListener('mousedown', e => startResize('s', e));
+document.getElementById('ref-resize-e').addEventListener('mousedown', e => startResize('e', e));
+document.getElementById('ref-resize-se').addEventListener('mousedown', e => startResize('se', e));
+window.addEventListener('mousemove', e => {
+  if (_pdrag) { panel.style.left = (e.clientX - _pox) + 'px'; panel.style.top = (e.clientY - _poy) + 'px'; }
+  if (_resizing) { const dx = e.clientX - _rx0, dy = e.clientY - _ry0;
+    if (_resizing === 'e' || _resizing === 'se') panel.style.width = Math.max(160, _rw0 + dx) + 'px';
+    if (_resizing === 's' || _resizing === 'se') refContent.style.height = Math.max(80, _rh0 + dy) + 'px';
+  }
+});
+window.addEventListener('mouseup', () => { _pdrag = false; _resizing = null; });
+
+/* ── Tab switching ──────────────────────────────────────────────────────────── */
+let _activeTab = 'original';
+document.querySelectorAll('.ref-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    _activeTab = btn.dataset.tab;
+    document.querySelectorAll('.ref-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.ref-pane').forEach(p => p.classList.remove('active'));
+    document.getElementById('pane-' + _activeTab).classList.add('active');
+    const v = activeVideo();
+    if (v) v.play().catch(() => {});
+    refreshVidControls();
+  });
+});
+
+/* ── Video control helpers ────────────────────────────────────────────────── */
+function activeVideo() {
+  const id = _activeTab === 'original' ? 'vid-original' : 'vid-annotated';
+  const v = document.getElementById(id);
+  return (v && v.src && v.style.display !== 'none' && v.readyState > 0) ? v : null;
+}
+function fmtTime(s) { const m = Math.floor(s / 60); return `${m}:${String(Math.floor(s % 60)).padStart(2, '0')}`; }
+function refreshVidControls() {
+  const v = activeVideo();
+  const ctrl = document.getElementById('vid-controls');
+  ctrl.style.display = v ? 'flex' : 'none';
+  if (v) {
+    document.getElementById('vid-btn-play').textContent = v.paused ? '▶' : '⏸';
+    document.getElementById('vid-time').textContent = fmtTime(v.currentTime) + ' / ' + fmtTime(v.duration || 0);
+    document.getElementById('vid-btn-mute').textContent = v.muted ? '🔇' : '🔊';
+  }
+}
+setInterval(() => { const v = activeVideo(); if (!v || v.paused) return;
+  const seek = document.getElementById('vid-seek');
+  if (v.duration) seek.value = (v.currentTime / v.duration) * 100;
+  document.getElementById('vid-time').textContent = fmtTime(v.currentTime) + ' / ' + fmtTime(v.duration);
+}, 200);
+document.getElementById('vid-btn-play').addEventListener('click', () => { const v = activeVideo(); if (!v) return; v.paused ? v.play() : v.pause(); document.getElementById('vid-btn-play').textContent = v.paused ? '▶' : '⏸'; });
+document.getElementById('vid-seek').addEventListener('input', e => { const v = activeVideo(); if (!v || !v.duration) return; v.currentTime = (e.target.value / 100) * v.duration; });
+document.getElementById('vid-btn-mute').addEventListener('click', () => { const muted = !document.getElementById('vid-original').muted; ['vid-original','vid-annotated'].forEach(id => { const v = document.getElementById(id); if (v) v.muted = muted; }); document.getElementById('vid-btn-mute').textContent = muted ? '🔇' : '🔊'; });
 
 /* ── Three.js scene ──────────────────────────────────────────────────────── */
 const status = document.getElementById('status');
@@ -250,15 +535,11 @@ document.body.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1a1a2e);
 scene.fog = new THREE.Fog(0x1a1a2e, 20, 60);
-
 const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.01, 100);
 camera.position.set(0, 1.4, 4.5);
-
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(0, 1.0, 0);
-controls.enableDamping = true; controls.dampingFactor = 0.08;
-controls.minDistance = 0.5; controls.maxDistance = 20;
-controls.update();
+controls.target.set(0, 1.0, 0); controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.minDistance = 0.5; controls.maxDistance = 20; controls.update();
 
 scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 const sun = new THREE.DirectionalLight(0xffffff, 1.4);
@@ -268,298 +549,150 @@ sun.shadow.camera.left = sun.shadow.camera.bottom = -5;
 sun.shadow.camera.right = sun.shadow.camera.top = 5;
 scene.add(sun);
 scene.add(new THREE.DirectionalLight(0x8888ff, 0.4).translateX(-4).translateY(2).translateZ(-2));
-
 scene.add(new THREE.GridHelper(20, 20, 0x00ffe7, 0x223344));
-const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(20, 20),
-  new THREE.MeshStandardMaterial({ color: 0x0d1117, roughness: 0.9, transparent: true, opacity: 0.85 })
-);
-ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true;
-scene.add(ground);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.MeshStandardMaterial({ color: 0x0d1117, roughness: 0.9, transparent: true, opacity: 0.85 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
 
-/* ── Bone tester — sliders read/write _boneDegrees directly ──────────── */
+/* ── Bone tester ─────────────────────────────────────────────────────── */
 let _selectedBone = null;
-
 function setSelectedBone(bone) {
   _selectedBone = bone;
   document.getElementById('selected-bone-name').textContent = bone ? bone.name : 'none';
-  if (bone) {
-    const [xd, yd, zd] = _boneDegrees[bone.name] || [0, 0, 0];
-    document.getElementById('slider-x').value = Math.round(xd);
-    document.getElementById('slider-y').value = Math.round(yd);
-    document.getElementById('slider-z').value = Math.round(zd);
-    console.log(`[ARES] Selected ${bone.name} — degrees: X:${xd} Y:${yd} Z:${zd}`);
-  } else {
-    document.getElementById('slider-x').value = 0;
-    document.getElementById('slider-y').value = 0;
-    document.getElementById('slider-z').value = 0;
-  }
+  if (bone) { const [xd, yd, zd] = _boneDegrees[bone.name] || [0,0,0]; document.getElementById('slider-x').value = Math.round(xd); document.getElementById('slider-y').value = Math.round(yd); document.getElementById('slider-z').value = Math.round(zd); }
+  else { document.getElementById('slider-x').value = 0; document.getElementById('slider-y').value = 0; document.getElementById('slider-z').value = 0; }
   updateAngleDisplay();
 }
-
-function updateAngleDisplay() {
-  document.getElementById('angle-display').textContent =
-    `X: ${document.getElementById('slider-x').value}°  ` +
-    `Y: ${document.getElementById('slider-y').value}°  ` +
-    `Z: ${document.getElementById('slider-z').value}°`;
-}
-
+function updateAngleDisplay() { document.getElementById('angle-display').textContent = `X: ${document.getElementById('slider-x').value}°  Y: ${document.getElementById('slider-y').value}°  Z: ${document.getElementById('slider-z').value}°`; }
 function onSliderInput() {
-  if (!_selectedBone) return;
-  const xd = parseFloat(document.getElementById('slider-x').value);
-  const yd = parseFloat(document.getElementById('slider-y').value);
-  const zd = parseFloat(document.getElementById('slider-z').value);
-  _boneDegrees[_selectedBone.name] = [xd, yd, zd];
-  applyBoneDegrees(_selectedBone);
-  updateAngleDisplay();
+  if (!_selectedBone || _isAnimMode) return;
+  _boneDegrees[_selectedBone.name] = [parseFloat(document.getElementById('slider-x').value), parseFloat(document.getElementById('slider-y').value), parseFloat(document.getElementById('slider-z').value)];
+  applyBoneDegrees(_selectedBone); updateAngleDisplay();
 }
-
-['slider-x', 'slider-y', 'slider-z'].forEach(id =>
-  document.getElementById(id).addEventListener('input', onSliderInput)
-);
+['slider-x','slider-y','slider-z'].forEach(id => document.getElementById(id).addEventListener('input', onSliderInput));
 
 /* ── Armature toggle ─────────────────────────────────────────────────── */
 let _skeletonHelper = null;
-function initArmatureToggle(model) {
-  _skeletonHelper = new THREE.SkeletonHelper(model);
-  _skeletonHelper.visible = true;
-  scene.add(_skeletonHelper);
-  document.getElementById('toggle-armature').addEventListener('change', e => {
-    if (_skeletonHelper) _skeletonHelper.visible = e.target.checked;
-  });
-}
+function initArmatureToggle(model) { _skeletonHelper = new THREE.SkeletonHelper(model); _skeletonHelper.visible = true; scene.add(_skeletonHelper); document.getElementById('toggle-armature').addEventListener('change', e => { if (_skeletonHelper) _skeletonHelper.visible = e.target.checked; }); }
 
-/* ── Bone tree + highlight + labels ──────────────────────────────────── */
+/* ── Bone tree + labels ──────────────────────────────────────────────── */
 const labelsContainer = document.getElementById('bone-labels');
 let _highlightedBones = new Set();
 let _boneLabels = {};
-
 function buildBoneTree(bones) {
   const boneSet = new Set(bones.map(b => b.name));
   const roots = bones.filter(b => !b.parent || !boneSet.has(b.parent.name));
   const container = document.getElementById('bone-tree');
   container.innerHTML = '';
-
   function addNode(bone, depth) {
-    const row = document.createElement('div');
-    row.className = 'bone-item';
-    const indent = document.createElement('span');
-    indent.className = 'bone-indent';
-    indent.style.width = (depth * 12) + 'px';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    const label = document.createElement('span');
-    label.textContent = bone.name;
+    const row = document.createElement('div'); row.className = 'bone-item';
+    const indent = document.createElement('span'); indent.className = 'bone-indent'; indent.style.width = (depth * 12) + 'px';
+    const cb = document.createElement('input'); cb.type = 'checkbox';
+    const label = document.createElement('span'); label.textContent = bone.name;
     row.appendChild(indent); row.appendChild(cb); row.appendChild(label);
     container.appendChild(row);
-
     cb.addEventListener('change', () => {
-      if (cb.checked) {
-        _highlightedBones.add(bone.name);
-        row.classList.add('highlighted');
-        setSelectedBone(bone);
-      } else {
-        _highlightedBones.delete(bone.name);
-        row.classList.remove('highlighted');
-        if (_selectedBone === bone) {
-          const fallback = _highlightedBones.size > 0 ? _skeleton.bones.find(b => _highlightedBones.has(b.name)) : null;
-          setSelectedBone(fallback);
-        }
-      }
-      updateSkeletonColors();
+      if (cb.checked) { _highlightedBones.add(bone.name); row.classList.add('highlighted'); setSelectedBone(bone); }
+      else { _highlightedBones.delete(bone.name); row.classList.remove('highlighted');
+        if (_selectedBone === bone) setSelectedBone(_highlightedBones.size > 0 ? _skeleton.bones.find(b => _highlightedBones.has(b.name)) : null);
+      } updateSkeletonColors();
     });
-
     bone.children.forEach(child => { if (boneSet.has(child.name)) addNode(child, depth + 1); });
   }
   roots.forEach(r => addNode(r, 0));
 }
-
-function updateSkeletonColors() {
-  if (!_skeletonHelper) return;
-  const colors = _skeletonHelper.geometry.attributes.color;
-  if (!colors) return;
-  _skeleton.bones.forEach((bone, i) => {
-    const hi = _highlightedBones.has(bone.name);
-    colors.setXYZ(i * 2,     hi ? 1 : 1, hi ? 0.18 : 1, hi ? 0.61 : 1);
-    colors.setXYZ(i * 2 + 1, hi ? 1 : 1, hi ? 0.18 : 1, hi ? 0.61 : 1);
-  });
-  colors.needsUpdate = true;
+function updateSkeletonColors() { if (!_skeletonHelper) return; const colors = _skeletonHelper.geometry.attributes.color; if (!colors) return;
+  _skeleton.bones.forEach((bone, i) => { const hi = _highlightedBones.has(bone.name); colors.setXYZ(i*2, hi?1:1, hi?0.18:1, hi?0.61:1); colors.setXYZ(i*2+1, hi?1:1, hi?0.18:1, hi?0.61:1); }); colors.needsUpdate = true;
 }
-
-function initBoneLabels(bones) {
-  labelsContainer.innerHTML = '';
-  _boneLabels = {};
-  bones.forEach(bone => {
-    const div = document.createElement('div');
-    div.className = 'bone-label';
-    div.textContent = bone.name;
-    div.style.display = 'none';
-    labelsContainer.appendChild(div);
-    _boneLabels[bone.name] = div;
-  });
-}
-
+function initBoneLabels(bones) { labelsContainer.innerHTML = ''; _boneLabels = {}; bones.forEach(bone => { const div = document.createElement('div'); div.className = 'bone-label'; div.textContent = bone.name; div.style.display = 'none'; labelsContainer.appendChild(div); _boneLabels[bone.name] = div; }); }
 const _tmpVec = new THREE.Vector3();
-function updateBoneLabels() {
-  if (!_skeleton) return;
-  _skeleton.bones.forEach(bone => {
-    const div = _boneLabels[bone.name];
-    if (!div) return;
-    if (!_highlightedBones.has(bone.name)) { div.style.display = 'none'; return; }
-    bone.getWorldPosition(_tmpVec);
-    _tmpVec.project(camera);
-    div.style.display = 'block';
-    div.style.left = ((_tmpVec.x * 0.5 + 0.5) * innerWidth) + 'px';
-    div.style.top  = ((-_tmpVec.y * 0.5 + 0.5) * innerHeight) + 'px';
-  });
-}
+function updateBoneLabels() { if (!_skeleton) return; _skeleton.bones.forEach(bone => { const div = _boneLabels[bone.name]; if (!div) return;
+  if (!_highlightedBones.has(bone.name)) { div.style.display = 'none'; return; }
+  bone.getWorldPosition(_tmpVec); _tmpVec.project(camera);
+  div.style.display = 'block'; div.style.left = ((_tmpVec.x*0.5+0.5)*innerWidth)+'px'; div.style.top = ((-_tmpVec.y*0.5+0.5)*innerHeight)+'px';
+}); }
 
 /* ── Axis Gizmo ──────────────────────────────────────────────────────── */
 const gizmoEl = document.getElementById('axis-gizmo');
 const gizmoRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-gizmoRenderer.setPixelRatio(devicePixelRatio);
-gizmoRenderer.setSize(90, 90);
+gizmoRenderer.setPixelRatio(devicePixelRatio); gizmoRenderer.setSize(90, 90);
 gizmoEl.appendChild(gizmoRenderer.domElement);
 const gizmoScene = new THREE.Scene();
 const gizmoCamera = new THREE.PerspectiveCamera(40, 1, 0.1, 10);
 gizmoCamera.position.set(0, 0, 3); gizmoCamera.lookAt(0, 0, 0);
-const gizmoGroup = new THREE.Group();
-gizmoGroup.scale.setScalar(0.8);
-gizmoScene.add(gizmoGroup);
-
+const gizmoGroup = new THREE.Group(); gizmoGroup.scale.setScalar(0.8); gizmoScene.add(gizmoGroup);
 function makeAxisArrow(dir, color, label) {
   const g = new THREE.Group();
-  g.add(new THREE.Line(
-    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), dir.clone().multiplyScalar(0.9)]),
-    new THREE.LineBasicMaterial({ color, linewidth: 3 })
-  ));
+  g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), dir.clone().multiplyScalar(0.9)]), new THREE.LineBasicMaterial({ color })));
   const cone = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.22, 12), new THREE.MeshBasicMaterial({ color }));
   cone.position.copy(dir.clone().multiplyScalar(1.0));
-  cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
-  g.add(cone);
-  if (label) {
-    const c = document.createElement('canvas'); c.width = c.height = 64;
-    const ctx = c.getContext('2d');
-    ctx.font = 'bold 44px monospace';
-    ctx.fillStyle = '#' + color.toString(16).padStart(6, '0');
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(label, 32, 32);
+  cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize()); g.add(cone);
+  if (label) { const c = document.createElement('canvas'); c.width = c.height = 64; const ctx = c.getContext('2d');
+    ctx.font = 'bold 44px monospace'; ctx.fillStyle = '#' + color.toString(16).padStart(6, '0');
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, 32, 32);
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true }));
-    s.scale.set(0.4, 0.4, 1);
-    s.position.copy(dir.clone().multiplyScalar(1.35));
-    g.add(s);
-  }
+    s.scale.set(0.4, 0.4, 1); s.position.copy(dir.clone().multiplyScalar(1.35)); g.add(s); }
   return g;
 }
-gizmoGroup.add(makeAxisArrow(new THREE.Vector3(1, 0, 0), 0xff4444, 'X'));
-gizmoGroup.add(makeAxisArrow(new THREE.Vector3(-1, 0, 0), 0x991111, ''));
-gizmoGroup.add(makeAxisArrow(new THREE.Vector3(0, 1, 0), 0x44ff44, 'Y'));
-gizmoGroup.add(makeAxisArrow(new THREE.Vector3(0, -1, 0), 0x119911, ''));
-gizmoGroup.add(makeAxisArrow(new THREE.Vector3(0, 0, 1), 0x4488ff, 'Z'));
-gizmoGroup.add(makeAxisArrow(new THREE.Vector3(0, 0, -1), 0x1144aa, ''));
+gizmoGroup.add(makeAxisArrow(new THREE.Vector3(1,0,0), 0xff4444, 'X'));
+gizmoGroup.add(makeAxisArrow(new THREE.Vector3(-1,0,0), 0x991111, ''));
+gizmoGroup.add(makeAxisArrow(new THREE.Vector3(0,1,0), 0x44ff44, 'Y'));
+gizmoGroup.add(makeAxisArrow(new THREE.Vector3(0,-1,0), 0x119911, ''));
+gizmoGroup.add(makeAxisArrow(new THREE.Vector3(0,0,1), 0x4488ff, 'Z'));
+gizmoGroup.add(makeAxisArrow(new THREE.Vector3(0,0,-1), 0x1144aa, ''));
+function renderGizmo() { gizmoCamera.position.copy(camera.position).sub(controls.target).normalize().multiplyScalar(3); gizmoCamera.lookAt(0, 0, 0); gizmoRenderer.render(gizmoScene, gizmoCamera); }
 
-function renderGizmo() {
-  gizmoCamera.position.copy(camera.position).sub(controls.target).normalize().multiplyScalar(3);
-  gizmoCamera.lookAt(0, 0, 0);
-  gizmoRenderer.render(gizmoScene, gizmoCamera);
-}
-
-/* ── Undo / Reset ────────────────────────────────────────────────────── */
+/* ── Undo / Reset ───────────────────────────────────────────────────── */
 let _initialDegrees = {};
 let _undoStack = [];
-const MAX_UNDO = 100;
-
-function snapshotInitial() {
-  _initialDegrees = {};
-  for (const [name, deg] of Object.entries(_boneDegrees)) {
-    _initialDegrees[name] = [...deg];
-  }
-}
-
-function pushUndo(bone) {
-  if (!bone) return;
-  _undoStack.push({ boneName: bone.name, prev: [...(_boneDegrees[bone.name] || [0,0,0])] });
-  if (_undoStack.length > MAX_UNDO) _undoStack.shift();
-  updateUndoButton();
-}
-
-function undo() {
-  const entry = _undoStack.pop();
-  if (!entry || !_skeleton) return;
-  const bone = _skeleton.bones.find(b => b.name === entry.boneName);
-  if (bone) {
-    _boneDegrees[bone.name] = [...entry.prev];
-    applyBoneDegrees(bone);
-    if (_selectedBone && _selectedBone.name === bone.name) setSelectedBone(bone);
-  }
-  updateUndoButton();
-}
-
-function resetPose() {
-  if (!_skeleton) return;
-  _skeleton.bones.forEach(b => {
-    _undoStack.push({ boneName: b.name, prev: [...(_boneDegrees[b.name] || [0,0,0])] });
-    _boneDegrees[b.name] = [...(_initialDegrees[b.name] || [0,0,0])];
-    applyBoneDegrees(b);
-  });
-  while (_undoStack.length > MAX_UNDO) _undoStack.shift();
-  if (_selectedBone) setSelectedBone(_selectedBone);
-  updateUndoButton();
-}
-
-function updateUndoButton() {
-  document.getElementById('btn-undo').disabled = _undoStack.length === 0;
-}
-
-['slider-x', 'slider-y', 'slider-z'].forEach(id => {
-  document.getElementById(id).addEventListener('pointerdown', () => { if (_selectedBone) pushUndo(_selectedBone); });
-});
+function snapshotInitial() { _initialDegrees = {}; for (const [n, d] of Object.entries(_boneDegrees)) _initialDegrees[n] = [...d]; }
+function pushUndo(bone) { if (!bone || _isAnimMode) return; _undoStack.push({ boneName: bone.name, prev: [...(_boneDegrees[bone.name]||[0,0,0])] }); if (_undoStack.length > 100) _undoStack.shift(); updateUndoButton(); }
+function undo() { const e = _undoStack.pop(); if (!e || !_skeleton) return; const bone = _skeleton.bones.find(b => b.name === e.boneName); if (bone) { _boneDegrees[bone.name] = [...e.prev]; applyBoneDegrees(bone); if (_selectedBone && _selectedBone.name === bone.name) setSelectedBone(bone); } updateUndoButton(); }
+function resetPose() { if (!_skeleton) return; if (_isAnimMode) { animGotoFrame(0); return; } _skeleton.bones.forEach(b => { _undoStack.push({ boneName: b.name, prev: [...(_boneDegrees[b.name]||[0,0,0])] }); _boneDegrees[b.name] = [...(_initialDegrees[b.name]||[0,0,0])]; applyBoneDegrees(b); }); while (_undoStack.length > 100) _undoStack.shift(); if (_selectedBone) setSelectedBone(_selectedBone); updateUndoButton(); }
+function updateUndoButton() { document.getElementById('btn-undo').disabled = _undoStack.length === 0; }
+['slider-x','slider-y','slider-z'].forEach(id => { document.getElementById(id).addEventListener('pointerdown', () => { if (_selectedBone && !_isAnimMode) pushUndo(_selectedBone); }); });
 document.getElementById('btn-undo').addEventListener('click', undo);
 document.getElementById('btn-reset').addEventListener('click', resetPose);
-window.addEventListener('keydown', e => {
-  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
-});
 updateUndoButton();
 
-/* ── Export — writes euler_degrees only ───────────────────────────────── */
+/* ── Export ─────────────────────────────────────────────────────────── */
 document.getElementById('btn-export').addEventListener('click', () => {
   if (!_skeleton) return;
   const eulerDeg = {};
-  for (const [name, deg] of Object.entries(_boneDegrees)) {
-    eulerDeg[name] = [Math.round(deg[0] * 10) / 10, Math.round(deg[1] * 10) / 10, Math.round(deg[2] * 10) / 10];
-  }
-  const data = {
-    image: (images[0] && images[0].src) || 'test-image.png',
-    landmarks: [],
-    euler_degrees: eulerDeg,
-  };
+  for (const [n, d] of Object.entries(_boneDegrees)) eulerDeg[n] = d.map(v => Math.round(v*10)/10);
+  const data = _isAnimMode
+    ? { source: 'exported', video_fps: _animFps, frame_count: _animFrames.length, frames: _animFrames.map((f, i) => ({ frame: i, euler_degrees: f })) }
+    : { image: 'test-image.png', euler_degrees: eulerDeg };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'pose.json'; a.click();
-  URL.revokeObjectURL(url);
-  status.textContent = `✓ Exported pose.json — ${Object.keys(eulerDeg).length} bones`;
+  const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'pose.json'; a.click(); URL.revokeObjectURL(url);
+  status.textContent = _isAnimMode ? `✓ Exported ${_animFrames.length} frames` : '✓ Exported pose.json';
 });
 
-/* ── Load pose from JSON ─────────────────────────────────────────────── */
-function loadPoseFromJSON(poseData, fileName) {
-  if (poseData.image) {
-    images = [
-      { src: poseData.image, label: 'ORIGINAL' },
-      { src: 'output_landmarks.jpg', label: 'ANNOTATED' },
-    ];
-    showImage(0);
+/* ── Load pose JSON ──────────────────────────────────────────────────── */
+function loadPoseFromJSON(poseData) {
+  let rawFrames = [];
+  if (Array.isArray(poseData.frames) && poseData.frames.length > 0) {
+    rawFrames = poseData.frames.map(normalizeFrame);
+  } else if (poseData.euler_degrees) {
+    rawFrames = [normalizeFrame(poseData)];
   }
-  if (_skeleton) {
-    applyPose(_skeleton, poseData);
-    snapshotInitial();
-    _undoStack = [];
-    updateUndoButton();
-    if (_selectedBone) setSelectedBone(_selectedBone);
+
+  if (rawFrames.length > 1) {
+    _isAnimMode = true;
+    _animFrames = rawFrames;
+    _animIdx = 0;
+    if (poseData.video_fps) { _animFps = poseData.video_fps; document.getElementById('fps-input').value = _animFps; }
+    animPause();
+    showPlayer(true);
+    if (_skeleton) { animGotoFrame(0); snapshotInitial(); }
+    updatePlayerUI();
+    status.textContent = `✓ Animation — ${_animFrames.length} frames @ ${_animFps.toFixed(1)} FPS`;
+  } else if (rawFrames.length === 1) {
+    _isAnimMode = false;
+    animPause();
+    showPlayer(false);
+    if (_skeleton) { applyPoseFromEulerMap(_skeleton, rawFrames[0]); snapshotInitial(); _undoStack = []; updateUndoButton(); if (_selectedBone) setSelectedBone(_selectedBone); }
+    status.textContent = '✓ Single-frame pose loaded';
   }
-  const dz = document.getElementById('json-drop');
-  dz.innerHTML = '<span id="json-drop-icon">✓</span>' + fileName.replace('.json', '') + '<br>loaded';
-  dz.classList.add('loaded');
-  status.textContent = `✓ Loaded ${fileName}`;
 }
 
 /* ── Drag & drop ─────────────────────────────────────────────────────── */
@@ -571,66 +704,24 @@ window.addEventListener('drop', async e => {
   e.preventDefault(); dropOverlay.classList.remove('active');
   const file = e.dataTransfer.files[0];
   if (!file || !file.name.toLowerCase().endsWith('.json')) { status.textContent = '✗ not a .json file'; return; }
-  try {
-    const poseData = JSON.parse(await file.text());
-    if (!poseData.euler_degrees) { status.textContent = '✗ JSON has no euler_degrees'; return; }
-    loadPoseFromJSON(poseData, file.name);
-  } catch (err) { console.error(err); status.textContent = `✗ ${err.message}`; }
+  try { loadPoseFromJSON(JSON.parse(await file.text())); } catch (err) { status.textContent = `✗ ${err.message}`; }
 });
-
 const dropZone = document.getElementById('json-drop');
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e => {
-  e.preventDefault(); dropZone.classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (!file || !file.name.endsWith('.json')) { dropZone.textContent = '✗ not JSON'; return; }
-  const reader = new FileReader();
-  reader.onload = ev => {
-    try {
-      const poseData = JSON.parse(ev.target.result);
-      if (!poseData.euler_degrees) throw new Error('no euler_degrees');
-      loadPoseFromJSON(poseData, file.name);
-    } catch (err) { dropZone.textContent = '✗ parse error'; console.error(err); }
-  };
-  reader.readAsText(file);
-});
-dropZone.addEventListener('click', () => {
-  const input = document.createElement('input');
-  input.type = 'file'; input.accept = '.json';
-  input.onchange = e => {
-    const file = e.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      try {
-        const poseData = JSON.parse(ev.target.result);
-        if (!poseData.euler_degrees) throw new Error('no euler_degrees');
-        loadPoseFromJSON(poseData, file.name);
-      } catch (err) { dropZone.textContent = '✗ parse error'; console.error(err); }
-    };
-    reader.readAsText(file);
-  };
-  input.click();
-});
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); const file = e.dataTransfer.files[0]; if (!file || !file.name.endsWith('.json')) return; const reader = new FileReader(); reader.onload = ev => { try { loadPoseFromJSON(JSON.parse(ev.target.result)); } catch (err) { console.error(err); } }; reader.readAsText(file); });
+dropZone.addEventListener('click', () => { const input = document.createElement('input'); input.type = 'file'; input.accept = '.json'; input.onchange = e => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = ev => { try { loadPoseFromJSON(JSON.parse(ev.target.result)); } catch (err) { console.error(err); } }; reader.readAsText(file); }; input.click(); });
 
 /* ── Initial load ────────────────────────────────────────────────────── */
 fetch('pose.json')
   .then(r => { if (!r.ok) throw new Error('pose.json not found'); return r.json(); })
   .then(poseData => {
-    const base = poseData.image || 'test-image.png';
-    images = [
-      { src: base, label: 'ORIGINAL' },
-      { src: 'output_landmarks.jpg', label: 'ANNOTATED' },
-    ];
-    showImage(0);
     status.textContent = 'Pose loaded — loading model…';
     return new Promise((resolve, reject) => {
-      new GLTFLoader().load(
-        'manequinn.glb',
+      new GLTFLoader().load('manequinn.glb',
         gltf => resolve({ gltf, poseData }),
-        xhr => { if (xhr.total) status.textContent = `Model ${Math.round(xhr.loaded / xhr.total * 100)}%…`; },
-        reject
-      );
+        xhr => { if (xhr.total) status.textContent = `Model ${Math.round(xhr.loaded/xhr.total*100)}%…`; },
+        reject);
     });
   })
   .then(({ gltf, poseData }) => {
@@ -639,37 +730,26 @@ fetch('pose.json')
     model.position.y -= box.min.y;
     model.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
     scene.add(model);
-
     let skinnedMesh = null;
     model.traverse(n => { if (n.isSkinnedMesh && !skinnedMesh) skinnedMesh = n; });
     if (!skinnedMesh) { status.textContent = 'WARNING: no SkinnedMesh found'; return; }
-
     _skeleton = skinnedMesh.skeleton;
-    console.log('[ARES] Bones:', _skeleton.bones.map(b => b.name));
-
     captureBindPose(_skeleton);
-    applyPose(_skeleton, poseData);
-    snapshotInitial();
     initArmatureToggle(model);
     buildBoneTree(_skeleton.bones);
     initBoneLabels(_skeleton.bones);
-
-    const nonZero = Object.entries(_boneDegrees).filter(([_, d]) => d[0] || d[1] || d[2]);
-    status.textContent = `✓ Pose applied — ${nonZero.length} bones with rotation`;
+    loadPoseFromJSON(poseData);
   })
   .catch(err => { console.error(err); status.textContent = `✗ ${err.message}`; });
 
 /* ── Resize ──────────────────────────────────────────────────────────── */
-window.addEventListener('resize', () => {
-  camera.aspect = innerWidth / innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
-});
+window.addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
 
 /* ── Render loop ─────────────────────────────────────────────────────── */
 (function animate() {
   requestAnimationFrame(animate);
   controls.update();
+  if (_lerpEnabled && _isAnimMode && _skeleton) applyLerpFrame(_skeleton);
   renderer.render(scene, camera);
   renderGizmo();
   updateBoneLabels();
